@@ -40,7 +40,7 @@ export const Sidebar: React.FC = () => {
     <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200/80 dark:border-slate-800 flex flex-col justify-between h-screen sticky top-0 transition-colors duration-200 z-30 select-none">
       {/* Brand Header */}
       <div>
-        <div className="flex items-center gap-3 px-6 py-6 border-b border-slate-100 dark:border-slate-800/60">
+        <div className="h-20 flex items-center gap-3 px-6 border-b border-slate-200/80 dark:border-slate-800">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-400 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
             <BookMarked className="w-6 h-6 stroke-[2.5]" />
           </div>
@@ -51,7 +51,7 @@ export const Sidebar: React.FC = () => {
         </div>
 
         {/* Navigation List */}
-        <nav className="px-4 py-5 space-y-1.5 overflow-y-auto max-h-[calc(100vh-280px)]">
+        <nav className="px-4 py-5 space-y-1.5 overflow-y-auto max-h-[calc(100vh-100px)]">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -77,28 +77,6 @@ export const Sidebar: React.FC = () => {
             );
           })}
         </nav>
-      </div>
-
-      {/* Upgrade to Pro Banner matching screenshot */}
-      <div className="p-4 m-4 rounded-2xl bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-slate-800/90 dark:to-slate-800/50 border border-indigo-100/60 dark:border-slate-700/60 shadow-sm relative overflow-hidden">
-        <div className="relative z-10 space-y-3 text-center">
-          <div className="w-8 h-8 rounded-full bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto shadow-sm">
-            <Sparkles className="w-4 h-4" />
-          </div>
-          <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
-            Upgrade to <strong className="text-indigo-600 dark:text-indigo-400 font-bold">Pro</strong> for more facilities
-          </p>
-          <button 
-            onClick={() => alert('Fitur Upgrade Pro: Membuka akses storage Supabase 1TB, Unlimited Live Rooms, & Analytics AI!')}
-            className="w-full py-2.5 px-4 rounded-xl text-xs font-semibold text-white gradient-btn flex items-center justify-center gap-2 group shadow-md"
-          >
-            <span>Upgrade</span>
-            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-          </button>
-        </div>
-        
-        {/* Decorative blur elements */}
-        <div className="absolute -top-6 -right-6 w-20 h-20 bg-indigo-200/40 dark:bg-indigo-900/30 rounded-full blur-xl pointer-events-none" />
       </div>
     </aside>
   );

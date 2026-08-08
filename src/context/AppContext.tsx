@@ -5,6 +5,8 @@ import {
   AttendanceRecord, 
   AttendantHistoryItem, 
   Course, 
+  CourseModule,
+  SubMaterial,
   LiveClassSession, 
   Invoice, 
   LibraryItem, 
@@ -41,7 +43,15 @@ interface AppContextType {
   attendantsHistory: AttendantHistoryItem[];
   courses: Course[];
   addCourse: (course: Omit<Course, 'id'>) => void;
+  updateCourse: (courseId: string, data: Partial<Course>) => void;
+  deleteCourse: (courseId: string) => void;
   updateCourseDeadline: (courseId: string, deadline: string) => void;
+  addModuleToCourse: (courseId: string, module: Omit<CourseModule, 'id'>) => void;
+  updateCourseModule: (courseId: string, moduleId: string, data: Partial<CourseModule>) => void;
+  deleteCourseModule: (courseId: string, moduleId: string) => void;
+  addSubMaterialToModule: (courseId: string, moduleId: string, subMaterial: Omit<SubMaterial, 'id'>) => void;
+  updateSubMaterial: (courseId: string, moduleId: string, subMaterialId: string, data: Partial<SubMaterial>) => void;
+  deleteSubMaterial: (courseId: string, moduleId: string, subMaterialId: string) => void;
   
   assignmentSubmissions: AssignmentSubmission[];
   addAssignmentSubmission: (submission: Omit<AssignmentSubmission, 'id' | 'submittedAt' | 'status'>) => void;
@@ -488,6 +498,154 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (e) { console.error('Supabase course deadline error:', e); }
   };
 
+  const updateCourse = async (courseId: string, data: Partial<Course>) => {
+    setCourses(prev => prev.map(c => c.id === courseId ? { ...c, ...data } : c));
+    try {
+      const dbUpdates: any = {};
+      if (data.title !== undefined) dbUpdates.title = data.title;
+      if (data.code !== undefined) dbUpdates.code = data.code;
+      if (data.description !== undefined) dbUpdates.description = data.description;
+      if (data.category !== undefined) dbUpdates.category = data.category;
+      if (data.thumbnail !== undefined) dbUpdates.thumbnail = data.thumbnail;
+      if (data.assignmentTitle !== undefined) dbUpdates.assignment_title = data.assignmentTitle;
+      if (data.assignmentDeadline !== undefined) dbUpdates.assignment_deadline = data.assignmentDeadline;
+
+      if (Object.keys(dbUpdates).length > 0) {
+        await supabase.from('courses').update(dbUpdates).eq('id', courseId);
+      }
+    } catch (e) { console.error('Supabase update course error:', e); }
+  };
+
+  const deleteCourse = async (courseId: string) => {
+    setCourses(prev => prev.filter(c => c.id !== courseId));
+    try {
+      await supabase.from('courses').delete().eq('id', courseId);
+    } catch (e) { console.error('Supabase delete course error:', e); }
+  };
+
+  const addModuleToCourse = async (courseId: string, module: Omit<CourseModule, 'id'>) => {
+    const newMod: CourseModule = {
+      ...module,
+      id: `mod-${Date.now()}`
+    };
+    setCourses(prev => prev.map(c => {
+      if (c.id === courseId) {
+        return {
+          ...c,
+          modules: [...(c.modules || []), newMod]
+        };
+      }
+      return c;
+    }));
+  };
+
+  const updateCourseModule = async (courseId: string, moduleId: string, data: Partial<CourseModule>) => {
+    setCourses(prev => prev.map(c => {
+      if (c.id === courseId) {
+        return {
+          ...c,
+          modules: (c.modules || []).map(m => m.id === moduleId ? { ...m, ...data } : m)
+        };
+      }
+      return c;
+    }));
+  };
+
+  const deleteCourseModule = async (courseId: string, moduleId: string) => {
+    setCourses(prev => prev.map(c => {
+      if (c.id === courseId) {
+        return {
+          ...c,
+          modules: (c.modules || []).filter(m => m.id !== moduleId)
+        };
+      }
+      return c;
+    }));
+  };
+
+  const addSubMaterialToModule = async (courseId: string, moduleId: string, sub: Omit<SubMaterial, 'id'>) => {
+    const newSub: SubMaterial = {
+      ...sub,
+      id: `sub-${Date.now()}`
+    };
+    setCourses(prev => prev.map(c => {
+      if (c.id === courseId) {
+        return {
+          ...c,
+          modules: (c.modules || []).map(m => {
+            if (m.id === moduleId) {
+              return {
+                ...m,
+                subMaterials: [...(m.subMaterials || []), newSub]
+              };
+            }
+            return m;
+          })
+        };
+      }
+      return c;
+    }));
+  };
+
+  const updateSubMaterial = async (courseId: string, moduleId: string, subId: string, data: Partial<SubMaterial>) => {
+    setCourses(prev => prev.map(c => {
+      if (c.id === courseId) {
+        return {
+          ...c,
+          modules: (c.modules || []).map(m => {
+            if (m.id === moduleId) {
+              return {
+                ...m,
+                subMaterials: (m.subMaterials || []).map(s => s.id === subId ? { ...s, ...data } : s)
+              };
+            }
+            return m;
+          })
+        };
+      }
+      return c;
+    }));
+  };
+
+  const deleteSubMaterial = async (courseId: string, moduleId: string, subId: string) => {
+    setCourses(prev => prev.map(c => {
+      if (c.id === courseId) {
+        return {
+          ...c,
+          modules: (c.modules || []).map(m => {
+            if (m.id === moduleId) {
+              return {
+                ...m,
+                subMaterials: (m.subMaterials || []).filter(s => s.id !== subId)
+              };
+            }
+            return m;
+          })
+        };
+      }
+      return c;
+    }));
+  };
+
+  const addSystemNotification = async (notif: Omit<NotificationItem, 'id' | 'isRead'>) => {
+    const created: NotificationItem = {
+      ...notif,
+      id: `notif-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      isRead: false
+    };
+    setNotifications(prev => [created, ...prev]);
+    try {
+      await supabase.from('notifications').insert({
+        id: created.id,
+        title: created.title,
+        message: created.message,
+        time: created.time,
+        is_read: false,
+        type: created.type
+      });
+    } catch (e) { console.error('Supabase notification insert error:', e); }
+  };
+
   const addAssignmentSubmission = async (sub: Omit<AssignmentSubmission, 'id' | 'submittedAt' | 'status'>) => {
     const created: AssignmentSubmission = {
       ...sub,
@@ -510,20 +668,130 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         status: created.status
       });
     } catch (e) { console.error('Supabase submission add error:', e); }
+
+    // Trigger notification for Teacher/Guru role
+    addSystemNotification({
+      title: 'Tugas Baru Dikirimkan',
+      message: `${created.studentName} mengunggah tugas "${created.fileName}" untuk kursus "${created.courseTitle}".`,
+      time: 'Baru saja',
+      type: 'assignment'
+    });
+  };
+
+  const handleAssignmentAccepted = async (sub: AssignmentSubmission) => {
+    const nowFormatted = new Date().toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    // Find student attendance record if exists
+    const existingAtt = attendanceRecords.find(
+      a => a.studentId === sub.studentId || a.studentName.toLowerCase() === sub.studentName.toLowerCase()
+    );
+
+    let newRate = 75;
+    if (existingAtt) {
+      newRate = Math.min(100, Math.max(50, Number(existingAtt.responseRate || 0) + 15));
+    }
+
+    const badgeColor = newRate >= 75 ? '#22c55e' : newRate >= 60 ? '#3b82f6' : newRate >= 50 ? '#f59e0b' : '#ef4444';
+
+    const newHistItem: AttendantHistoryItem = {
+      id: `hist-${Date.now()}`,
+      name: sub.studentName,
+      avatar: sub.studentAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+      duration: `Sudah absen pada ${nowFormatted}`,
+      rate: newRate,
+      badgeColor: badgeColor
+    };
+
+    setAttendantsHistory(prev => [newHistItem, ...prev]);
+
+    try {
+      await supabase.from('attendants_history').insert({
+        id: newHistItem.id,
+        name: newHistItem.name,
+        avatar: newHistItem.avatar,
+        duration: newHistItem.duration,
+        rate: newHistItem.rate,
+        badge_color: newHistItem.badgeColor
+      });
+    } catch (e) {
+      console.error('Supabase insert attendants_history error:', e);
+    }
+
+    // Also update student attendance record
+    const today = new Date().toISOString().split('T')[0];
+    if (existingAtt) {
+      setAttendanceRecords(prev => prev.map(a => a.id === existingAtt.id ? {
+        ...a,
+        responseRate: newRate,
+        status: 'Regular',
+        lastUpdated: today
+      } : a));
+      try {
+        await supabase.from('attendance_records').update({
+          response_rate: newRate,
+          status: 'Regular',
+          last_updated: today
+        }).eq('id', existingAtt.id);
+      } catch (e) {
+        console.error('Supabase update attendance_record error:', e);
+      }
+    } else {
+      const newAttRecord: AttendanceRecord = {
+        id: `att-${Date.now()}`,
+        studentId: sub.studentId,
+        studentName: sub.studentName,
+        avatarUrl: sub.studentAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+        customCode: `STU-0000${Math.floor(10 + Math.random() * 90)}`,
+        responseRate: newRate,
+        status: 'Regular',
+        lastUpdated: today
+      };
+      setAttendanceRecords(prev => [newAttRecord, ...prev]);
+      try {
+        await supabase.from('attendance_records').insert({
+          id: newAttRecord.id,
+          student_id: newAttRecord.studentId,
+          student_name: newAttRecord.studentName,
+          avatar_url: newAttRecord.avatarUrl,
+          custom_code: newAttRecord.customCode,
+          response_rate: newAttRecord.responseRate,
+          status: newAttRecord.status,
+          last_updated: newAttRecord.lastUpdated
+        });
+      } catch (e) {
+        console.error('Supabase insert attendance_record error:', e);
+      }
+    }
   };
 
   const updateSubmissionStatus = async (submissionId: string, status: 'accepted' | 'rejected') => {
+    const targetSub = assignmentSubmissions.find(s => s.id === submissionId);
     setAssignmentSubmissions(prev => prev.map(sub => sub.id === submissionId ? { ...sub, status } : sub));
     try {
       await supabase.from('assignment_submissions').update({ status }).eq('id', submissionId);
     } catch (e) { console.error('Supabase submission status error:', e); }
+
+    if (status === 'accepted' && targetSub) {
+      handleAssignmentAccepted(targetSub);
+    }
   };
 
   const gradeAssignmentSubmission = async (submissionId: string, score: number) => {
+    const targetSub = assignmentSubmissions.find(s => s.id === submissionId);
     setAssignmentSubmissions(prev => prev.map(sub => sub.id === submissionId ? { ...sub, score, status: 'accepted' as const } : sub));
     try {
       await supabase.from('assignment_submissions').update({ score, status: 'accepted' }).eq('id', submissionId);
     } catch (e) { console.error('Supabase submission grade error:', e); }
+
+    if (targetSub) {
+      handleAssignmentAccepted(targetSub);
+    }
   };
 
   const addLiveClass = async (session: Omit<LiveClassSession, 'id'>) => {
@@ -546,10 +814,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         starts_in_minutes: created.startsInMinutes
       });
     } catch (e) { console.error('Supabase live class add error:', e); }
+
+    if (created.isLiveNow) {
+      addSystemNotification({
+        title: 'Kelas Live Dimulai!',
+        message: `Sesi Live "${created.title}" (${created.courseTitle}) sedang berlangsung sekarang. Mari bergabung!`,
+        time: 'Baru saja',
+        type: 'live'
+      });
+    }
   };
 
   const toggleLiveStatus = async (id: string, isLive?: boolean) => {
     let nextLive = false;
+    const targetSession = liveClasses.find(s => s.id === id);
     setLiveClasses(prev => prev.map(s => {
       if (s.id === id) {
         nextLive = isLive !== undefined ? isLive : !s.isLiveNow;
@@ -560,6 +838,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       await supabase.from('live_classes').update({ is_live_now: nextLive }).eq('id', id);
     } catch (e) { console.error('Supabase toggle live error:', e); }
+
+    if (nextLive && targetSession) {
+      addSystemNotification({
+        title: 'Kelas Live Dimulai!',
+        message: `Sesi Live "${targetSession.title}" (${targetSession.courseTitle}) sedang berlangsung sekarang. Mari bergabung!`,
+        time: 'Baru saja',
+        type: 'live'
+      });
+    }
   };
 
   const deleteLiveClass = async (id: string) => {
@@ -596,9 +883,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (err) {
       console.error('Supabase error inserting invoice:', err);
     }
+
+    if (created.status === 'overdue') {
+      addSystemNotification({
+        title: 'Tagihan Menunggak (Overdue)',
+        message: `Tagihan "${created.title}" (${created.invoiceCode}) untuk ${created.studentName} telah melewati batas waktu pembayaran.`,
+        time: 'Baru saja',
+        type: 'payment'
+      });
+    }
   };
 
   const updateInvoiceStatus = async (id: string, status: Invoice['status'], proofUrl?: string) => {
+    const targetInv = invoices.find(i => i.id === id);
     setInvoices(prev => prev.map(item => item.id === id ? {
       ...item,
       status,
@@ -612,6 +909,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }).eq('id', id);
     } catch (err) {
       console.error('Supabase error updating invoice:', err);
+    }
+
+    if (status === 'overdue' && targetInv) {
+      addSystemNotification({
+        title: 'Tagihan Menunggak (Overdue)',
+        message: `Tagihan "${targetInv.title}" (${targetInv.invoiceCode}) untuk ${targetInv.studentName} telah melewati batas waktu pembayaran.`,
+        time: 'Baru saja',
+        type: 'payment'
+      });
     }
   };
 
@@ -679,7 +985,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       attendantsHistory,
       courses,
       addCourse,
+      updateCourse,
+      deleteCourse,
       updateCourseDeadline,
+      addModuleToCourse,
+      updateCourseModule,
+      deleteCourseModule,
+      addSubMaterialToModule,
+      updateSubMaterial,
+      deleteSubMaterial,
       assignmentSubmissions,
       addAssignmentSubmission,
       updateSubmissionStatus,

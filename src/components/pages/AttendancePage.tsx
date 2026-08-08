@@ -61,6 +61,16 @@ export const AttendancePage: React.FC = () => {
     setShowCreateModal(false);
   };
 
+  // Dynamic Students Analytics Calculations
+  const totalStudentsCount = attendanceRecords.length;
+  const overallRate = totalStudentsCount > 0
+    ? Number((attendanceRecords.reduce((sum, r) => sum + (Number(r.responseRate) || 0), 0) / totalStudentsCount).toFixed(2))
+    : 0;
+
+  const regularCount = attendanceRecords.filter(r => r.status === 'Regular').length;
+  const irregularCount = attendanceRecords.filter(r => r.status === 'Irregular').length;
+  const currentDayBadge = String(new Date().getDate()).padStart(2, '0');
+
   return (
     <div className="space-y-6">
       {/* Page Header matching screenshot */}
@@ -276,60 +286,66 @@ export const AttendancePage: React.FC = () => {
             </div>
 
             <div className="space-y-4">
-              {attendantsHistory.map((item) => (
-                <div key={item.id} className="flex items-center justify-between group">
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={item.avatar}
-                      alt={item.name}
-                      className="w-10 h-10 rounded-full object-cover border border-slate-100 dark:border-slate-800"
-                    />
-                    <div>
-                      <h3 className="font-bold text-xs text-slate-900 dark:text-white leading-tight">
-                        {item.name}
-                      </h3>
-                      <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
-                        {item.duration}
-                      </p>
+              {attendantsHistory.length > 0 ? (
+                attendantsHistory.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between group">
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={item.avatar}
+                        alt={item.name}
+                        className="w-10 h-10 rounded-full object-cover border border-slate-100 dark:border-slate-800 shadow-sm"
+                      />
+                      <div>
+                        <h3 className="font-bold text-xs text-slate-900 dark:text-white leading-tight">
+                          {item.name}
+                        </h3>
+                        <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
+                          {item.duration}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Circular Ring Progress Indicator matching screenshot */}
+                    <div className="relative w-10 h-10 flex items-center justify-center shrink-0">
+                      <svg className="w-10 h-10 transform -rotate-90">
+                        <circle
+                          cx="20"
+                          cy="20"
+                          r="15"
+                          stroke="currentColor"
+                          strokeWidth="3"
+                          className="text-slate-100 dark:text-slate-800"
+                          fill="transparent"
+                        />
+                        <circle
+                          cx="20"
+                          cy="20"
+                          r="15"
+                          stroke={item.badgeColor || '#3b82f6'}
+                          strokeWidth="3"
+                          strokeDasharray={2 * Math.PI * 15}
+                          strokeDashoffset={2 * Math.PI * 15 * (1 - item.rate / 100)}
+                          strokeLinecap="round"
+                          fill="transparent"
+                        />
+                      </svg>
+                      <span className="absolute text-[10px] font-bold text-slate-700 dark:text-slate-300">
+                        {item.rate}%
+                      </span>
                     </div>
                   </div>
-
-                  {/* Circular Ring Progress Indicator matching screenshot */}
-                  <div className="relative w-10 h-10 flex items-center justify-center">
-                    <svg className="w-10 h-10 transform -rotate-90">
-                      <circle
-                        cx="20"
-                        cy="20"
-                        r="15"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                        className="text-slate-100 dark:text-slate-800"
-                        fill="transparent"
-                      />
-                      <circle
-                        cx="20"
-                        cy="20"
-                        r="15"
-                        stroke={item.badgeColor}
-                        strokeWidth="3"
-                        strokeDasharray={2 * Math.PI * 15}
-                        strokeDashoffset={2 * Math.PI * 15 * (1 - item.rate / 100)}
-                        strokeLinecap="round"
-                        fill="transparent"
-                      />
-                    </svg>
-                    <span className="absolute text-[10px] font-bold text-slate-700 dark:text-slate-300">
-                      {item.rate}%
-                    </span>
-                  </div>
+                ))
+              ) : (
+                <div className="py-6 text-center text-xs text-slate-400 italic">
+                  Belum ada riwayat absensi.
                 </div>
-              ))}
+              )}
             </div>
           </div>
 
           {/* Card 2: Students Analytics Donut Chart matching screenshot */}
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
               <h2 className="font-bold text-sm text-slate-900 dark:text-white tracking-tight">
                 Students Analytics
               </h2>
@@ -339,7 +355,7 @@ export const AttendancePage: React.FC = () => {
             </div>
 
             {/* Donut Chart Visual Container matching screenshot */}
-            <div className="relative py-4 flex flex-col items-center justify-center">
+            <div className="relative py-2 flex flex-col items-center justify-center">
               <div className="relative w-48 h-48 flex items-center justify-center">
                 {/* SVG Donut Ring */}
                 <svg className="w-48 h-48 transform -rotate-90">
@@ -352,7 +368,7 @@ export const AttendancePage: React.FC = () => {
                     className="text-slate-100 dark:text-slate-800"
                     fill="transparent"
                   />
-                  {/* Active Gradient Arc matching screenshot */}
+                  {/* Dynamic Active Gradient Arc */}
                   <circle
                     cx="96"
                     cy="96"
@@ -360,9 +376,10 @@ export const AttendancePage: React.FC = () => {
                     stroke="url(#donutGradient)"
                     strokeWidth="16"
                     strokeDasharray={2 * Math.PI * 72}
-                    strokeDashoffset={2 * Math.PI * 72 * (1 - 0.997)}
+                    strokeDashoffset={2 * Math.PI * 72 * (1 - Math.min(100, Math.max(0, overallRate)) / 100)}
                     strokeLinecap="round"
                     fill="transparent"
+                    className="transition-all duration-700"
                   />
                   <defs>
                     <linearGradient id="donutGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -379,15 +396,31 @@ export const AttendancePage: React.FC = () => {
                     Overall
                   </span>
                   <span className="text-xl font-extrabold text-slate-900 dark:text-white mt-0.5 tracking-tight">
-                    99.70%
+                    {overallRate.toFixed(2)}%
                   </span>
                 </div>
 
                 {/* Bottom Right Day Badge matching screenshot */}
                 <div className="absolute bottom-1 right-3 bg-blue-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg border-2 border-white dark:border-slate-900 flex flex-col items-center leading-tight">
                   <span className="text-[8px] opacity-80 uppercase">Day</span>
-                  <span>05</span>
+                  <span>{currentDayBadge}</span>
                 </div>
+              </div>
+            </div>
+
+            {/* Breakdown metrics */}
+            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100 dark:border-slate-800 text-center text-xs">
+              <div className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800/60">
+                <p className="text-[10px] text-slate-400 font-medium">Siswa Regular</p>
+                <p className="font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5 text-xs">
+                  {regularCount} Siswa ({totalStudentsCount > 0 ? Math.round((regularCount / totalStudentsCount) * 100) : 0}%)
+                </p>
+              </div>
+              <div className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800/60">
+                <p className="text-[10px] text-slate-400 font-medium">Siswa Irregular</p>
+                <p className="font-extrabold text-red-500 dark:text-red-400 mt-0.5 text-xs">
+                  {irregularCount} Siswa ({totalStudentsCount > 0 ? Math.round((irregularCount / totalStudentsCount) * 100) : 0}%)
+                </p>
               </div>
             </div>
           </div>

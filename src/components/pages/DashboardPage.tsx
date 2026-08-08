@@ -16,13 +16,17 @@ import {
 } from 'lucide-react';
 
 export const DashboardPage: React.FC = () => {
-  const { currentRole, profiles, courses, liveClasses, invoices, setActiveTab } = useApp();
+  const { currentRole, profiles, courses, liveClasses, invoices, attendanceRecords, setActiveTab } = useApp();
 
   const totalStudents = profiles.filter(p => p.role === 'student').length;
   const totalTeachers = profiles.filter(p => p.role === 'teacher').length;
   const totalRevenue = invoices
     .filter(i => i.status === 'paid')
     .reduce((sum, i) => sum + i.amount, 0);
+
+  const overallAttendanceRate = attendanceRecords.length > 0
+    ? Number((attendanceRecords.reduce((sum, r) => sum + (Number(r.responseRate) || 0), 0) / attendanceRecords.length).toFixed(1))
+    : 0;
 
   return (
     <div className="space-y-8">
@@ -224,7 +228,7 @@ export const DashboardPage: React.FC = () => {
             <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
               <h2 className="font-bold text-sm text-slate-900 dark:text-white">Persentase Kehadiran Kelas</h2>
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 text-center space-y-2">
-                <span className="text-3xl font-extrabold text-indigo-600 dark:text-indigo-400">88.5%</span>
+                <span className="text-3xl font-extrabold text-indigo-600 dark:text-indigo-400">{overallAttendanceRate.toFixed(1)}%</span>
                 <p className="text-xs text-slate-400">Rata-rata partisipasi siswa di kelas Anda</p>
                 <button 
                   onClick={() => setActiveTab('attendance')}

@@ -25,14 +25,23 @@ import {
   Check,
   User,
   ExternalLink,
-  Star
+  Star,
+  Trash2
 } from 'lucide-react';
 
 export const CoursesPage: React.FC = () => {
   const { 
     courses, 
     addCourse, 
+    updateCourse,
+    deleteCourse,
     updateCourseDeadline,
+    addModuleToCourse,
+    updateCourseModule,
+    deleteCourseModule,
+    addSubMaterialToModule,
+    updateSubMaterial,
+    deleteSubMaterial,
     assignmentSubmissions,
     addAssignmentSubmission,
     updateSubmissionStatus,
@@ -74,6 +83,176 @@ export const CoursesPage: React.FC = () => {
 
   // Edit Deadline State (Teacher/Admin)
   const [editDeadlineDate, setEditDeadlineDate] = useState('');
+
+  // Edit & Delete Course State
+  const [showEditCourseModal, setShowEditCourseModal] = useState(false);
+  const [showDeleteCourseConfirm, setShowDeleteCourseConfirm] = useState(false);
+  const [editCourseTitle, setEditCourseTitle] = useState('');
+  const [editCourseCategory, setEditCourseCategory] = useState('');
+  const [editCourseCode, setEditCourseCode] = useState('');
+  const [editCourseDesc, setEditCourseDesc] = useState('');
+  const [editCourseThumbnail, setEditCourseThumbnail] = useState('');
+  const [editCourseAssignmentTitle, setEditCourseAssignmentTitle] = useState('');
+  const [editCourseAssignmentDeadline, setEditCourseAssignmentDeadline] = useState('');
+
+  // Module Modal State
+  const [showModuleModal, setShowModuleModal] = useState(false);
+  const [moduleModalMode, setModuleModalMode] = useState<'add' | 'edit'>('add');
+  const [targetModuleId, setTargetModuleId] = useState<string | null>(null);
+  const [moduleTitle, setModuleTitle] = useState('');
+  const [moduleDesc, setModuleDesc] = useState('');
+  const [showDeleteModuleConfirm, setShowDeleteModuleConfirm] = useState(false);
+  const [moduleToDeleteId, setModuleToDeleteId] = useState<string | null>(null);
+
+  // SubMaterial Modal State
+  const [showSubModal, setShowSubModal] = useState(false);
+  const [subModalMode, setSubModalMode] = useState<'add' | 'edit'>('add');
+  const [subTargetModuleId, setSubTargetModuleId] = useState<string | null>(null);
+  const [subTargetSubId, setSubTargetSubId] = useState<string | null>(null);
+  const [subTitle, setSubTitle] = useState('');
+  const [subType, setSubType] = useState<'video' | 'text' | 'quiz'>('video');
+  const [subDuration, setSubDuration] = useState<number>(15);
+  const [subContentUrl, setSubContentUrl] = useState('');
+  const [showDeleteSubConfirm, setShowDeleteSubConfirm] = useState(false);
+  const [subToDeleteModuleId, setSubToDeleteModuleId] = useState<string | null>(null);
+  const [subToDeleteId, setSubToDeleteId] = useState<string | null>(null);
+
+  // Handlers for Course Edit / Delete
+  const handleOpenEditCourse = () => {
+    if (!selectedCourse) return;
+    setEditCourseTitle(selectedCourse.title);
+    setEditCourseCategory(selectedCourse.category);
+    setEditCourseCode(selectedCourse.code);
+    setEditCourseDesc(selectedCourse.description);
+    setEditCourseThumbnail(selectedCourse.thumbnail);
+    setEditCourseAssignmentTitle(selectedCourse.assignmentTitle || '');
+    setEditCourseAssignmentDeadline(selectedCourse.assignmentDeadline || '');
+    setShowEditCourseModal(true);
+  };
+
+  const handleSaveEditCourse = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedCourse || !editCourseTitle.trim()) return;
+    const updatedData = {
+      title: editCourseTitle.trim(),
+      category: editCourseCategory,
+      code: editCourseCode.trim(),
+      description: editCourseDesc.trim(),
+      thumbnail: editCourseThumbnail.trim() || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80',
+      assignmentTitle: editCourseAssignmentTitle.trim(),
+      assignmentDeadline: editCourseAssignmentDeadline.trim()
+    };
+    updateCourse(selectedCourse.id, updatedData);
+    setSelectedCourse(prev => prev ? { ...prev, ...updatedData } : prev);
+    setShowEditCourseModal(false);
+  };
+
+  const handleDeleteCourseConfirmed = () => {
+    if (!selectedCourse) return;
+    const courseId = selectedCourse.id;
+    deleteCourse(courseId);
+    const remaining = courses.filter(c => c.id !== courseId);
+    setSelectedCourse(remaining[0] || null);
+    setShowDeleteCourseConfirm(false);
+  };
+
+  // Handlers for Module Add / Edit / Delete
+  const handleOpenAddModule = () => {
+    setModuleModalMode('add');
+    setTargetModuleId(null);
+    setModuleTitle('');
+    setModuleDesc('');
+    setShowModuleModal(true);
+  };
+
+  const handleOpenEditModule = (mod: CourseModule) => {
+    setModuleModalMode('edit');
+    setTargetModuleId(mod.id);
+    setModuleTitle(mod.title);
+    setModuleDesc(mod.description);
+    setShowModuleModal(true);
+  };
+
+  const handleSaveModule = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedCourse || !moduleTitle.trim()) return;
+
+    if (moduleModalMode === 'add') {
+      addModuleToCourse(selectedCourse.id, {
+        title: moduleTitle.trim(),
+        description: moduleDesc.trim(),
+        subMaterials: []
+      });
+    } else if (targetModuleId) {
+      updateCourseModule(selectedCourse.id, targetModuleId, {
+        title: moduleTitle.trim(),
+        description: moduleDesc.trim()
+      });
+    }
+
+    setShowModuleModal(false);
+  };
+
+  const handleDeleteModuleConfirmed = () => {
+    if (!selectedCourse || !moduleToDeleteId) return;
+    deleteCourseModule(selectedCourse.id, moduleToDeleteId);
+    setModuleToDeleteId(null);
+    setShowDeleteModuleConfirm(false);
+  };
+
+  // Handlers for SubMaterial Add / Edit / Delete
+  const handleOpenAddSub = (moduleId: string) => {
+    setSubModalMode('add');
+    setSubTargetModuleId(moduleId);
+    setSubTargetSubId(null);
+    setSubTitle('');
+    setSubType('video');
+    setSubDuration(15);
+    setSubContentUrl('');
+    setShowSubModal(true);
+  };
+
+  const handleOpenEditSub = (moduleId: string, sub: SubMaterial) => {
+    setSubModalMode('edit');
+    setSubTargetModuleId(moduleId);
+    setSubTargetSubId(sub.id);
+    setSubTitle(sub.title);
+    setSubType(sub.type);
+    setSubDuration(sub.durationMinutes || 15);
+    setSubContentUrl(sub.contentUrl || '');
+    setShowSubModal(true);
+  };
+
+  const handleSaveSub = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedCourse || !subTargetModuleId || !subTitle.trim()) return;
+
+    if (subModalMode === 'add') {
+      addSubMaterialToModule(selectedCourse.id, subTargetModuleId, {
+        title: subTitle.trim(),
+        type: subType,
+        durationMinutes: Number(subDuration) || 15,
+        contentUrl: subContentUrl.trim() || undefined
+      });
+    } else if (subTargetSubId) {
+      updateSubMaterial(selectedCourse.id, subTargetModuleId, subTargetSubId, {
+        title: subTitle.trim(),
+        type: subType,
+        durationMinutes: Number(subDuration) || 15,
+        contentUrl: subContentUrl.trim() || undefined
+      });
+    }
+
+    setShowSubModal(false);
+  };
+
+  const handleDeleteSubConfirmed = () => {
+    if (!selectedCourse || !subToDeleteModuleId || !subToDeleteId) return;
+    deleteSubMaterial(selectedCourse.id, subToDeleteModuleId, subToDeleteId);
+    setSubToDeleteModuleId(null);
+    setSubToDeleteId(null);
+    setShowDeleteSubConfirm(false);
+  };
 
   const filteredCourses = courses.filter(c =>
     c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -461,16 +640,37 @@ export const CoursesPage: React.FC = () => {
                       {selectedCourse.description}
                     </p>
 
-                    {/* Instructor Info */}
-                    <div className="flex items-center gap-2 pt-1">
-                      <img
-                        src={selectedCourse.teacherAvatar}
-                        alt={selectedCourse.teacherName}
-                        className="w-6 h-6 rounded-full object-cover"
-                      />
-                      <span className="text-xs text-slate-600 dark:text-slate-300 font-medium">
-                        Pengajar: <strong>{selectedCourse.teacherName}</strong>
-                      </span>
+                    {/* Instructor Info & Admin/Teacher Action Buttons */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                      <div className="flex items-center gap-2">
+                        <img
+                          src={selectedCourse.teacherAvatar}
+                          alt={selectedCourse.teacherName}
+                          className="w-6 h-6 rounded-full object-cover"
+                        />
+                        <span className="text-xs text-slate-600 dark:text-slate-300 font-medium">
+                          Pengajar: <strong>{selectedCourse.teacherName}</strong>
+                        </span>
+                      </div>
+
+                      {(currentRole === 'admin' || currentRole === 'teacher') && (
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={handleOpenEditCourse}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-slate-700 transition-colors shadow-sm"
+                          >
+                            <Edit2 className="w-3.5 h-3.5 text-indigo-500" />
+                            <span>Edit Kursus</span>
+                          </button>
+                          <button
+                            onClick={() => setShowDeleteCourseConfirm(true)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 text-xs font-bold hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors shadow-sm"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                            <span>Hapus Kursus</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -539,10 +739,22 @@ export const CoursesPage: React.FC = () => {
 
                 {/* Syllabus Hierarchy Tree */}
                 <div className="space-y-4">
-                  <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-indigo-600" />
-                    Struktur Silabus Pembelajaran
-                  </h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                      <Layers className="w-4 h-4 text-indigo-600" />
+                      Struktur Silabus Pembelajaran
+                    </h3>
+
+                    {(currentRole === 'admin' || currentRole === 'teacher') && (
+                      <button
+                        onClick={handleOpenAddModule}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 font-bold text-xs hover:bg-indigo-100 dark:hover:bg-indigo-900 transition-colors border border-indigo-200/60 dark:border-indigo-800"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>+ Tambah Modul</span>
+                      </button>
+                    )}
+                  </div>
 
                   <div className="space-y-3">
                     {selectedCourse.modules.map((mod) => {
@@ -568,12 +780,53 @@ export const CoursesPage: React.FC = () => {
                                 <p className="text-[11px] text-slate-400">{mod.description}</p>
                               </div>
                             </div>
-                            {isExpanded ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
+                            
+                            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                              {(currentRole === 'admin' || currentRole === 'teacher') && (
+                                <>
+                                  <button
+                                    onClick={() => handleOpenEditModule(mod)}
+                                    className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-slate-800 transition-colors"
+                                    title="Edit Modul"
+                                  >
+                                    <Edit2 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setModuleToDeleteId(mod.id);
+                                      setShowDeleteModuleConfirm(true);
+                                    }}
+                                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-slate-800 transition-colors"
+                                    title="Hapus Modul"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </>
+                              )}
+                              <button onClick={() => toggleModuleExpand(mod.id)} className="p-1 text-slate-400">
+                                {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                              </button>
+                            </div>
                           </div>
 
                           {/* Sub-Material List */}
                           {isExpanded && (
                             <div className="px-4 pb-4 space-y-2 border-t border-slate-100 dark:border-slate-800 pt-3">
+                              <div className="flex items-center justify-between pb-1">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                  Materi Pembelajaran ({mod.subMaterials.length})
+                                </span>
+                                {(currentRole === 'admin' || currentRole === 'teacher') && (
+                                  <button
+                                    onClick={() => handleOpenAddSub(mod.id)}
+                                    className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                    <span>Tambah Materi</span>
+                                  </button>
+                                )}
+                              </div>
+
                               {mod.subMaterials.map((sub) => (
                                 <div
                                   key={sub.id}
@@ -596,6 +849,33 @@ export const CoursesPage: React.FC = () => {
                                       <span className="text-[10px] opacity-75">{sub.durationMinutes} min</span>
                                     )}
                                     {sub.completed && <CheckCircle className="w-4 h-4 text-emerald-400" />}
+
+                                    {(currentRole === 'admin' || currentRole === 'teacher') && (
+                                      <div className="flex items-center gap-1 ml-1" onClick={(e) => e.stopPropagation()}>
+                                        <button
+                                          onClick={() => handleOpenEditSub(mod.id, sub)}
+                                          className={`p-1 rounded transition-colors ${
+                                            selectedSubMaterial?.id === sub.id ? 'hover:bg-indigo-700 text-white' : 'text-slate-400 hover:text-indigo-600 hover:bg-slate-200 dark:hover:bg-slate-700'
+                                          }`}
+                                          title="Edit Materi"
+                                        >
+                                          <Edit2 className="w-3 h-3" />
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            setSubToDeleteModuleId(mod.id);
+                                            setSubToDeleteId(sub.id);
+                                            setShowDeleteSubConfirm(true);
+                                          }}
+                                          className={`p-1 rounded transition-colors ${
+                                            selectedSubMaterial?.id === sub.id ? 'hover:bg-indigo-700 text-white' : 'text-slate-400 hover:text-red-600 hover:bg-slate-200 dark:hover:bg-slate-700'
+                                          }`}
+                                          title="Hapus Materi"
+                                        >
+                                          <Trash2 className="w-3 h-3" />
+                                        </button>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               ))}
@@ -930,6 +1210,353 @@ export const CoursesPage: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Edit Course (Admin/Teacher) */}
+      {showEditCourseModal && selectedCourse && (
+        <div className="fixed inset-0 bg-slate-950/70 flex items-center justify-center p-4 sm:p-6 z-50 overflow-y-auto animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 my-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="font-bold text-base text-slate-900 dark:text-white">Edit Informasi Kursus</h3>
+              <button onClick={() => setShowEditCourseModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditCourse} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                  Judul Kursus *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editCourseTitle}
+                  onChange={(e) => setEditCourseTitle(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 font-bold"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                    Kode Kursus
+                  </label>
+                  <input
+                    type="text"
+                    value={editCourseCode}
+                    onChange={(e) => setEditCourseCode(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                    Kategori
+                  </label>
+                  <select
+                    value={editCourseCategory}
+                    onChange={(e) => setEditCourseCategory(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-medium"
+                  >
+                    <option value="Web Development">Web Development</option>
+                    <option value="UI/UX Design">UI/UX Design</option>
+                    <option value="Backend Development">Backend Development</option>
+                    <option value="Mobile App">Mobile App</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                  Deskripsi Kursus
+                </label>
+                <textarea
+                  rows={3}
+                  value={editCourseDesc}
+                  onChange={(e) => setEditCourseDesc(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                  Judul Tugas
+                </label>
+                <input
+                  type="text"
+                  value={editCourseAssignmentTitle}
+                  onChange={(e) => setEditCourseAssignmentTitle(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                  URL Gambar Thumbnail
+                </label>
+                <input
+                  type="text"
+                  value={editCourseThumbnail}
+                  onChange={(e) => setEditCourseThumbnail(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-mono"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowEditCourseModal(false)}
+                  className="px-4 py-2 rounded-xl text-slate-500 font-semibold"
+                >
+                  Batal
+                </button>
+                <button type="submit" className="px-5 py-2 rounded-xl text-white font-bold gradient-btn">
+                  Simpan Perubahan
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Confirm Delete Course */}
+      {showDeleteCourseConfirm && selectedCourse && (
+        <div className="fixed inset-0 bg-slate-950/70 flex items-center justify-center p-4 sm:p-6 z-50 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-sm w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 text-center">
+            <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-950/60 text-red-600 flex items-center justify-center mx-auto">
+              <AlertCircle className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-base text-slate-900 dark:text-white">Hapus Kursus ini?</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Apakah Anda yakin ingin menghapus <strong>"{selectedCourse.title}"</strong>? Seluruh silabus dan data terkait akan dihapus.
+              </p>
+            </div>
+            <div className="flex justify-center gap-3 pt-2">
+              <button
+                onClick={() => setShowDeleteCourseConfirm(false)}
+                className="px-4 py-2 rounded-xl text-slate-500 font-semibold text-xs hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleDeleteCourseConfirmed}
+                className="px-5 py-2 rounded-xl bg-red-600 text-white font-bold text-xs hover:bg-red-700 shadow-md"
+              >
+                Ya, Hapus Kursus
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Add / Edit Module */}
+      {showModuleModal && (
+        <div className="fixed inset-0 bg-slate-950/70 flex items-center justify-center p-4 sm:p-6 z-50 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="font-bold text-base text-slate-900 dark:text-white">
+                {moduleModalMode === 'add' ? 'Tambah Modul Baru' : 'Edit Informasi Modul'}
+              </h3>
+              <button onClick={() => setShowModuleModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveModule} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                  Judul Modul *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={moduleTitle}
+                  onChange={(e) => setModuleTitle(e.target.value)}
+                  placeholder="e.g. Modul 1: Dasar-dasar React Components"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                  Deskripsi Modul
+                </label>
+                <textarea
+                  rows={3}
+                  value={moduleDesc}
+                  onChange={(e) => setModuleDesc(e.target.value)}
+                  placeholder="Ringkasan atau tujuan modul..."
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowModuleModal(false)}
+                  className="px-4 py-2 rounded-xl text-slate-500 font-semibold"
+                >
+                  Batal
+                </button>
+                <button type="submit" className="px-5 py-2 rounded-xl text-white font-bold gradient-btn">
+                  Simpan Modul
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Confirm Delete Module */}
+      {showDeleteModuleConfirm && (
+        <div className="fixed inset-0 bg-slate-950/70 flex items-center justify-center p-4 sm:p-6 z-50 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-sm w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 text-center">
+            <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-950/60 text-red-600 flex items-center justify-center mx-auto">
+              <AlertCircle className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-base text-slate-900 dark:text-white">Hapus Modul ini?</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Apakah Anda yakin ingin menghapus modul ini beserta seluruh materi di dalamnya?
+              </p>
+            </div>
+            <div className="flex justify-center gap-3 pt-2">
+              <button
+                onClick={() => setShowDeleteModuleConfirm(false)}
+                className="px-4 py-2 rounded-xl text-slate-500 font-semibold text-xs hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleDeleteModuleConfirmed}
+                className="px-5 py-2 rounded-xl bg-red-600 text-white font-bold text-xs hover:bg-red-700 shadow-md"
+              >
+                Ya, Hapus Modul
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Add / Edit Sub-Material */}
+      {showSubModal && (
+        <div className="fixed inset-0 bg-slate-950/70 flex items-center justify-center p-4 sm:p-6 z-50 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="font-bold text-base text-slate-900 dark:text-white">
+                {subModalMode === 'add' ? 'Tambah Materi Baru' : 'Edit Materi Sub-Modul'}
+              </h3>
+              <button onClick={() => setShowSubModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveSub} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                  Judul Materi Sub-Modul *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={subTitle}
+                  onChange={(e) => setSubTitle(e.target.value)}
+                  placeholder="e.g. Video: Pengenalan JSX & Hooks"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 font-bold"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                    Tipe Materi *
+                  </label>
+                  <select
+                    value={subType}
+                    onChange={(e) => setSubType(e.target.value as any)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold"
+                  >
+                    <option value="video">Video</option>
+                    <option value="text">Teks / PDF</option>
+                    <option value="quiz">Quiz / Latihan</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                    Durasi (Menit)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={subDuration}
+                    onChange={(e) => setSubDuration(Number(e.target.value))}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                  Content URL (Tautan Video / File)
+                </label>
+                <input
+                  type="text"
+                  value={subContentUrl}
+                  onChange={(e) => setSubContentUrl(e.target.value)}
+                  placeholder="https://..."
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-mono"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowSubModal(false)}
+                  className="px-4 py-2 rounded-xl text-slate-500 font-semibold"
+                >
+                  Batal
+                </button>
+                <button type="submit" className="px-5 py-2 rounded-xl text-white font-bold gradient-btn">
+                  Simpan Materi
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Confirm Delete Sub-Material */}
+      {showDeleteSubConfirm && (
+        <div className="fixed inset-0 bg-slate-950/70 flex items-center justify-center p-4 sm:p-6 z-50 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-sm w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 text-center">
+            <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-950/60 text-red-600 flex items-center justify-center mx-auto">
+              <AlertCircle className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-base text-slate-900 dark:text-white">Hapus Materi ini?</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Apakah Anda yakin ingin menghapus materi sub-modul ini?
+              </p>
+            </div>
+            <div className="flex justify-center gap-3 pt-2">
+              <button
+                onClick={() => setShowDeleteSubConfirm(false)}
+                className="px-4 py-2 rounded-xl text-slate-500 font-semibold text-xs hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleDeleteSubConfirmed}
+                className="px-5 py-2 rounded-xl bg-red-600 text-white font-bold text-xs hover:bg-red-700 shadow-md"
+              >
+                Ya, Hapus Materi
+              </button>
+            </div>
           </div>
         </div>
       )}
