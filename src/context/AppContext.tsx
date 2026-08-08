@@ -91,7 +91,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Auth state
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     const saved = localStorage.getItem('skillset_is_authenticated');
-    return saved !== null ? saved === 'true' : true;
+    return saved !== null ? saved === 'true' : false;
   });
 
   const [currentUserId, setCurrentUserId] = useState<string>(() => {

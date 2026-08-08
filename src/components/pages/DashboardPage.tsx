@@ -111,8 +111,10 @@ export const DashboardPage: React.FC = () => {
               </div>
               <div>
                 <p className="text-xs text-slate-400 font-medium">Tingkat Kehadiran Global</p>
-                <h3 className="text-xl font-extrabold text-slate-900 dark:text-white mt-0.5">99.70%</h3>
-                <span className="text-[10px] text-emerald-500 font-semibold">Sangat Baik</span>
+                <h3 className="text-xl font-extrabold text-slate-900 dark:text-white mt-0.5">{overallAttendanceRate.toFixed(1)}%</h3>
+                <span className={`text-[10px] font-semibold ${overallAttendanceRate >= 75 ? 'text-emerald-500' : overallAttendanceRate >= 60 ? 'text-blue-500' : 'text-amber-500'}`}>
+                  {overallAttendanceRate >= 75 ? 'Sangat Baik' : overallAttendanceRate >= 60 ? 'Cukup Baik' : 'Perlu Perhatian'}
+                </span>
               </div>
             </div>
           </div>
