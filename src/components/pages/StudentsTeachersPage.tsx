@@ -75,13 +75,40 @@ export const StudentsTeachersPage: React.FC = () => {
 
     if (editingUser) {
       updateProfile(editingUser.id, {
-        fullName,
-        email,
-        phone,
-        classStatus
+        fullName: fullName.trim(),
+        email: email.trim().toLowerCase(),
+        phone: phone.trim() || '-',
+        classStatus: classStatus.trim()
+      });
+    } else {
+      const roleCount = profiles.filter(p => p.role === activeSubTab).length + 1;
+      const createdId = activeSubTab === 'student' 
+        ? `STU-0000${roleCount + 10}` 
+        : `TCH-0000${roleCount + 10}`;
+
+      addProfile({
+        fullName: fullName.trim(),
+        email: email.trim().toLowerCase(),
+        password: activeSubTab === 'student' ? 'student123' : 'teacher123',
+        role: activeSubTab,
+        phone: phone.trim() || '-',
+        classStatus: classStatus.trim() || (activeSubTab === 'student' ? 'Frontend Web Development' : 'Senior Instructor'),
+        status: 'active',
+        avatarUrl: activeSubTab === 'teacher'
+          ? 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=150&q=80'
+          : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
+        studentId: activeSubTab === 'student' ? createdId : undefined,
+        teacherId: activeSubTab === 'teacher' ? createdId : undefined,
+        attendanceRate: activeSubTab === 'student' ? 0 : undefined,
+        statusBadge: activeSubTab === 'student' ? 'Irregular' : undefined
       });
     }
 
+    setFullName('');
+    setEmail('');
+    setPhone('');
+    setClassStatus('');
+    setEditingUser(null);
     setShowAddModal(false);
   };
 

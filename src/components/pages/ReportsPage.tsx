@@ -32,20 +32,20 @@ export const ReportsPage: React.FC = () => {
       let finalScore = 0;
       if (studentSubmissions.length > 0) {
         const totalScore = studentSubmissions.reduce((sum, s) => sum + (s.score || 0), 0);
-        // Divide by TOTAL COURSES in system (e.g. 4), so unsubmitted tasks count as 0
         finalScore = Math.round(totalScore / totalCourses);
       } else {
-        // Default fallback for demo accounts with no submissions yet
-        const demoTotal = idx % 2 === 0 ? 360 : 340;
-        finalScore = Math.round(demoTotal / totalCourses);
+        finalScore = 0;
       }
 
-      let letterGrade = 'A';
+      let letterGrade = 'F';
       if (finalScore >= 90) letterGrade = 'A';
       else if (finalScore >= 80) letterGrade = 'B+';
       else if (finalScore >= 70) letterGrade = 'B';
       else if (finalScore >= 60) letterGrade = 'C';
-      else letterGrade = 'D';
+      else if (finalScore >= 50) letterGrade = 'D';
+      else letterGrade = finalScore === 0 ? '-' : 'F';
+
+      const attRate = st.attendanceRate ?? 0;
 
       return {
         studentId: st.studentId || `STU-000${idx + 10}`,
@@ -53,8 +53,8 @@ export const ReportsPage: React.FC = () => {
         courseTitle: st.classStatus || 'Frontend Web Development',
         grade: letterGrade,
         score: finalScore,
-        attendancePercent: st.attendanceRate || 85,
-        status: finalScore >= 70 ? 'Pass' : 'Fail'
+        attendancePercent: attRate,
+        status: finalScore >= 70 ? 'Pass' : finalScore > 0 ? 'Fail' : 'Belum Evaluasi'
       };
     });
 

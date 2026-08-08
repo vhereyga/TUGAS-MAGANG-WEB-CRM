@@ -32,9 +32,9 @@ export const AttendancePage: React.FC = () => {
 
   // Form state for creating student/attendance
   const [newStudentName, setNewStudentName] = useState('');
-  const [newCustomCode, setNewCustomCode] = useState('STU-0000' + Math.floor(25 + Math.random() * 70));
-  const [newResponseRate, setNewResponseRate] = useState(75);
-  const [newStatus, setNewStatus] = useState<'Regular' | 'Irregular'>('Regular');
+  const [newCustomCode, setNewCustomCode] = useState('');
+  const [newResponseRate, setNewResponseRate] = useState(0);
+  const [newStatus, setNewStatus] = useState<'Regular' | 'Irregular'>('Irregular');
 
   // Filter records by search query and status filter
   const filteredRecords = attendanceRecords.filter((rec) => {
@@ -48,16 +48,23 @@ export const AttendancePage: React.FC = () => {
     e.preventDefault();
     if (!newStudentName.trim()) return;
 
+    const rateNum = Number(newResponseRate) || 0;
+    const statusVal = rateNum >= 75 ? 'Regular' : 'Irregular';
+    const code = newCustomCode.trim() || `STU-0000${attendanceRecords.length + 10}`;
+
     addAttendanceRecord({
       studentId: `usr-${Date.now()}`,
-      studentName: newStudentName,
-      avatarUrl: `https://images.unsplash.com/photo-${1500000000000 + Math.floor(Math.random() * 100000)}?auto=format&fit=crop&w=150&q=80`,
-      customCode: newCustomCode,
-      responseRate: Number(newResponseRate),
-      status: newStatus
+      studentName: newStudentName.trim(),
+      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
+      customCode: code,
+      responseRate: rateNum,
+      status: statusVal
     });
 
     setNewStudentName('');
+    setNewCustomCode('');
+    setNewResponseRate(0);
+    setNewStatus('Irregular');
     setShowCreateModal(false);
   };
 
@@ -188,10 +195,16 @@ export const AttendancePage: React.FC = () => {
                       {/* Attendance Progress Bar */}
                       <td className="py-4 px-5 w-44">
                         <div className="space-y-1">
-                          <div className="flex items-center justify-between text-[10px] font-semibold text-indigo-600 dark:text-indigo-400">
-                            <span>{item.responseRate}% Kehadiran</span>
-                            <span className="text-slate-400 font-normal">({Math.round((item.responseRate / 100) * (courses.length || 4))}/{(courses.length || 4)} Course)</span>
-                          </div>
+                          {(() => {
+                            const totalC = courses.length > 0 ? courses.length : 4;
+                            const attendedC = Math.round((item.responseRate / 100) * totalC);
+                            return (
+                              <div className="flex items-center justify-between text-[10px] font-semibold text-indigo-600 dark:text-indigo-400">
+                                <span>{item.responseRate}% Kehadiran</span>
+                                <span className="text-slate-400 font-normal">({attendedC}/{totalC} Course)</span>
+                              </div>
+                            );
+                          })()}
                           <div className="w-full h-1.5 rounded-full bg-indigo-100 dark:bg-slate-800 overflow-hidden">
                             <div 
                               className="h-full bg-indigo-500 rounded-full transition-all duration-500"

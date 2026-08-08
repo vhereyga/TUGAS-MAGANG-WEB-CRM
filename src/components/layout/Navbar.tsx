@@ -38,7 +38,8 @@ export const Navbar: React.FC = () => {
     markNotificationRead,
     setActiveTab,
     logout,
-    addProfile
+    addProfile,
+    profiles
   } = useApp();
 
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
@@ -85,18 +86,19 @@ export const Navbar: React.FC = () => {
     const finalPassword = newPassword.trim() || defaultPass;
     const defaultStatus = newRole === 'student' ? 'Frontend Web Development' : newRole === 'teacher' ? 'Senior Instructor' : 'Administrator Utama';
 
+    const roleCount = profiles.filter(p => p.role === newRole).length + 1;
     const createdId = newRole === 'student' 
-      ? `STU-0000${Math.floor(30 + Math.random() * 60)}` 
+      ? `STU-0000${roleCount + 10}` 
       : newRole === 'teacher' 
-      ? `TCH-0000${Math.floor(10 + Math.random() * 90)}` 
-      : `ADM-0000${Math.floor(1 + Math.random() * 99)}`;
+      ? `TCH-0000${roleCount + 10}` 
+      : `ADM-0000${roleCount + 10}`;
 
     addProfile({
       fullName: newFullName.trim(),
       email: newEmail.trim().toLowerCase(),
       password: finalPassword,
       role: newRole,
-      phone: newPhone.trim() || '+62 812-3456-7890',
+      phone: newPhone.trim() || '-',
       classStatus: newClassStatus.trim() || defaultStatus,
       status: 'active',
       avatarUrl: newRole === 'admin' 
@@ -106,8 +108,8 @@ export const Navbar: React.FC = () => {
         : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
       studentId: newRole === 'student' ? createdId : undefined,
       teacherId: newRole === 'teacher' ? createdId : undefined,
-      attendanceRate: 90,
-      statusBadge: 'Regular'
+      attendanceRate: newRole === 'student' ? 0 : undefined,
+      statusBadge: newRole === 'student' ? 'Irregular' : undefined
     });
 
     setSuccessAlert(`🎉 Akun ${newRole.toUpperCase()} atas nama "${newFullName}" berhasil dibuat! ID: ${createdId}`);

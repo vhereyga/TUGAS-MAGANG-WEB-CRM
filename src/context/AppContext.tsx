@@ -389,14 +389,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (e) { console.error('Supabase profile add error:', e); }
 
     if (newP.role === 'student') {
+      const initialRate = created.attendanceRate ?? 0;
+      const initialStatus = created.statusBadge || (initialRate >= 75 ? 'Regular' : 'Irregular');
       const newAtt: AttendanceRecord = {
         id: `att-${Date.now()}`,
         studentId: created.id,
         studentName: created.fullName,
         avatarUrl: created.avatarUrl,
-        customCode: created.studentId || `STU-0000${Math.floor(10 + Math.random() * 90)}`,
-        responseRate: created.attendanceRate || 0,
-        status: created.statusBadge || 'Irregular',
+        customCode: created.studentId || `STU-0000${attendanceRecords.length + 10}`,
+        responseRate: initialRate,
+        status: initialStatus,
         lastUpdated: new Date().toISOString().split('T')[0]
       };
       setAttendanceRecords(prev => [newAtt, ...prev]);
@@ -434,23 +436,84 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateAttendanceStatus = async (id: string, status: 'Regular' | 'Irregular') => {
     const today = new Date().toISOString().split('T')[0];
+    const target = attendanceRecords.find(item => item.id === id);
+
     setAttendanceRecords(prev => prev.map(item => item.id === id ? {
       ...item,
       status,
       lastUpdated: today
     } : item));
+
+    if (target) {
+      setProfiles(prev => prev.map(p => (p.id === target.studentId || p.fullName.toLowerCase() === target.studentName.toLowerCase()) ? {
+        ...p,
+        statusBadge: status
+      } : p));
+    }
+
     try {
       await supabase.from('attendance_records').update({ status, last_updated: today }).eq('id', id);
+      if (target) {
+        await supabase.from('profiles').update({ status_badge: status }).eq('id', target.studentId);
+      }
     } catch (e) { console.error('Supabase attendance update error:', e); }
   };
 
   const addAttendanceRecord = async (rec: Omit<AttendanceRecord, 'id' | 'lastUpdated'>) => {
     const created: AttendanceRecord = {
       ...rec,
-      id: `att-${Date.now()}`,
+      id: rec.studentId || `att-${Date.now()}`,
       lastUpdated: new Date().toISOString().split('T')[0]
     };
     setAttendanceRecords(prev => [created, ...prev]);
+
+    const existingProf = profiles.find(p => p.id === created.studentId || p.fullName.toLowerCase() === created.studentName.toLowerCase());
+    if (!existingProf) {
+      const newProf: UserProfile = {
+        id: created.studentId || `usr-${Date.now()}`,
+        studentId: created.customCode,
+        fullName: created.studentName,
+        email: `${created.studentName.toLowerCase().replace(/\s+/g, '')}@skillset.edu`,
+        password: 'student123',
+        role: 'student',
+        avatarUrl: created.avatarUrl || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
+        classStatus: 'Frontend Web Development',
+        attendanceRate: created.responseRate,
+        statusBadge: created.status,
+        status: 'active',
+        createdAt: created.lastUpdated
+      };
+      setProfiles(prev => [newProf, ...prev]);
+      try {
+        await supabase.from('profiles').insert({
+          id: newProf.id,
+          student_id: newProf.studentId,
+          full_name: newProf.fullName,
+          email: newProf.email,
+          password: newProf.password,
+          role: newProf.role,
+          avatar_url: newProf.avatarUrl,
+          class_status: newProf.classStatus,
+          attendance_rate: newProf.attendanceRate,
+          status_badge: newProf.statusBadge,
+          status: newProf.status,
+          created_at: newProf.createdAt
+        });
+      } catch (e) { console.error('Supabase profile add error from attendance:', e); }
+    } else {
+      setProfiles(prev => prev.map(p => p.id === existingProf.id ? {
+        ...p,
+        attendanceRate: created.responseRate,
+        statusBadge: created.status
+      } : p));
+      try {
+        await supabase.from('profiles').update({
+          attendance_rate: created.responseRate,
+          status_badge: created.status
+        }).eq('id', existingProf.id);
+      } catch (e) { console.error('Supabase profile update error from attendance:', e); }
+    }
+
     try {
       await supabase.from('attendance_records').insert({
         id: created.id,
@@ -692,17 +755,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       a => a.studentId === sub.studentId || a.studentName.toLowerCase() === sub.studentName.toLowerCase()
     );
 
-    let newRate = 75;
+    const totalC = courses.length > 0 ? courses.length : 4;
+    const step = 100 / totalC;
+    let newRate = 0;
     if (existingAtt) {
-      newRate = Math.min(100, Math.max(50, Number(existingAtt.responseRate || 0) + 15));
+      newRate = Math.min(100, Math.round(Number(existingAtt.responseRate || 0) + step));
+    } else {
+      newRate = Math.round(step);
     }
+    const computedStatus: 'Regular' | 'Irregular' = newRate >= 75 ? 'Regular' : 'Irregular';
 
     const badgeColor = newRate >= 75 ? '#22c55e' : newRate >= 60 ? '#3b82f6' : newRate >= 50 ? '#f59e0b' : '#ef4444';
 
     const newHistItem: AttendantHistoryItem = {
       id: `hist-${Date.now()}`,
       name: sub.studentName,
-      avatar: sub.studentAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+      avatar: sub.studentAvatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
       duration: `Sudah absen pada ${nowFormatted}`,
       rate: newRate,
       badgeColor: badgeColor
@@ -729,15 +797,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setAttendanceRecords(prev => prev.map(a => a.id === existingAtt.id ? {
         ...a,
         responseRate: newRate,
-        status: 'Regular',
+        status: computedStatus,
         lastUpdated: today
       } : a));
+      setProfiles(prev => prev.map(p => (p.id === existingAtt.studentId || p.fullName.toLowerCase() === existingAtt.studentName.toLowerCase()) ? {
+        ...p,
+        attendanceRate: newRate,
+        statusBadge: computedStatus
+      } : p));
       try {
         await supabase.from('attendance_records').update({
           response_rate: newRate,
-          status: 'Regular',
+          status: computedStatus,
           last_updated: today
         }).eq('id', existingAtt.id);
+        await supabase.from('profiles').update({
+          attendance_rate: newRate,
+          status_badge: computedStatus
+        }).eq('id', existingAtt.studentId);
       } catch (e) {
         console.error('Supabase update attendance_record error:', e);
       }
@@ -746,10 +823,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         id: `att-${Date.now()}`,
         studentId: sub.studentId,
         studentName: sub.studentName,
-        avatarUrl: sub.studentAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
-        customCode: `STU-0000${Math.floor(10 + Math.random() * 90)}`,
+        avatarUrl: sub.studentAvatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
+        customCode: `STU-0000${attendanceRecords.length + 10}`,
         responseRate: newRate,
-        status: 'Regular',
+        status: computedStatus,
         lastUpdated: today
       };
       setAttendanceRecords(prev => [newAttRecord, ...prev]);

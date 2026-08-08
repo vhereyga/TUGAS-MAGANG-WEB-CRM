@@ -133,7 +133,7 @@ export interface AcademicReport {
   grade: string;
   score: number;
   attendancePercent: number;
-  status: 'Pass' | 'Fail';
+  status: 'Pass' | 'Fail' | 'Belum Evaluasi';
 }
 
 export interface FinancialReport {
