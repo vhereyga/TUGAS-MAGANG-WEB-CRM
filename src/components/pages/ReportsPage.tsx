@@ -57,7 +57,7 @@ export const ReportsPage: React.FC = () => {
         grade: letterGrade,
         score: finalScore,
         attendancePercent: attRate,
-        status: finalScore >= 70 ? 'Pass' : finalScore > 0 ? 'Fail' : 'Belum Evaluasi'
+        status: finalScore >= 60 ? 'Pass' : finalScore > 0 ? 'Fail' : 'Belum Evaluasi'
       };
     });
 
@@ -197,9 +197,19 @@ export const ReportsPage: React.FC = () => {
                     <td className="py-3 px-4 font-extrabold">{row.score} / 100</td>
                     <td className="py-3 px-4 font-black text-indigo-600">{row.grade}</td>
                     <td className="py-3 px-4 text-right">
-                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-[10px]">
-                        LULUS (PASS)
-                      </span>
+                      {row.status === 'Pass' ? (
+                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 font-bold text-[10px]">
+                          LULUS (PASS)
+                        </span>
+                      ) : row.status === 'Fail' ? (
+                        <span className="px-2.5 py-0.5 rounded-full bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-400 font-bold text-[10px]">
+                          TIDAK LULUS (FAIL)
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold text-[10px]">
+                          BELUM EVALUASI
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))}
