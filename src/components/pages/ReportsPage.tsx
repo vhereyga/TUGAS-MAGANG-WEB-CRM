@@ -14,9 +14,12 @@ import {
 } from 'lucide-react';
 
 export const ReportsPage: React.FC = () => {
-  const { profiles, invoices, assignmentSubmissions, courses } = useApp();
+  const { profiles, invoices, assignmentSubmissions, courses, currentRole } = useApp();
 
   const [activeReportTab, setActiveReportTab] = useState<'academic' | 'financial'>('academic');
+
+  const isStudent = currentRole === 'student';
+  const effectiveTab = isStudent ? 'academic' : activeReportTab;
 
   const totalCourses = courses.length > 0 ? courses.length : 4;
 
@@ -67,7 +70,7 @@ export const ReportsPage: React.FC = () => {
   // CSV Export helper
   const exportToCSV = () => {
     let csvContent = "data:text/csv;charset=utf-8,";
-    if (activeReportTab === 'academic') {
+    if (effectiveTab === 'academic') {
       csvContent += "ID Siswa,Nama Siswa,Kursus,Nilai,Skor,Kehadiran %,Status\n";
       academicReports.forEach(row => {
         csvContent += `${row.studentId},"${row.studentName}","${row.courseTitle}",${row.grade},${row.score},${row.attendancePercent}%,${row.status}\n`;
@@ -80,7 +83,7 @@ export const ReportsPage: React.FC = () => {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `laporan_${activeReportTab}_skillset.csv`);
+    link.setAttribute("download", `laporan_${effectiveTab}_skillset.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -96,10 +99,12 @@ export const ReportsPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-            Reports (Laporan Akademik & Finansial)
+            Reports ({isStudent ? 'Laporan Akademik Siswa' : 'Laporan Akademik & Finansial'})
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Pembuatan laporan nilai/transkrip & finansial yang dapat diekspor ke PDF/Excel (CSV)
+            {isStudent 
+              ? 'Laporan transkrip nilai & rekapitulasi performa akademik siswa'
+              : 'Pembuatan laporan nilai/transkrip & finansial yang dapat diekspor ke PDF/Excel (CSV)'}
           </p>
         </div>
 
@@ -123,35 +128,37 @@ export const ReportsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3 print:hidden">
-        <button
-          onClick={() => setActiveReportTab('academic')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-            activeReportTab === 'academic'
-              ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900'
-              : 'text-slate-500 hover:text-slate-800'
-          }`}
-        >
-          <Award className="w-4 h-4" />
-          <span>Laporan Akademik & Transkrip Nilai</span>
-        </button>
+      {/* Tabs (Hidden for Students so they only see Academic Report) */}
+      {!isStudent && (
+        <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3 print:hidden">
+          <button
+            onClick={() => setActiveReportTab('academic')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              effectiveTab === 'academic'
+                ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Award className="w-4 h-4" />
+            <span>Laporan Akademik & Transkrip Nilai</span>
+          </button>
 
-        <button
-          onClick={() => setActiveReportTab('financial')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-            activeReportTab === 'financial'
-              ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900'
-              : 'text-slate-500 hover:text-slate-800'
-          }`}
-        >
-          <DollarSign className="w-4 h-4" />
-          <span>Laporan Finansial & Pembayaran</span>
-        </button>
-      </div>
+          <button
+            onClick={() => setActiveReportTab('financial')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              effectiveTab === 'financial'
+                ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <DollarSign className="w-4 h-4" />
+            <span>Laporan Finansial & Pembayaran</span>
+          </button>
+        </div>
+      )}
 
       {/* Printable Report View */}
-      {activeReportTab === 'academic' ? (
+      {effectiveTab === 'academic' ? (
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm space-y-6">
           <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
             <div>
