@@ -29,6 +29,10 @@ interface AppContextType {
   setActiveTab: (tab: string) => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  isMobileMenuOpen: boolean;
+  setIsMobileMenuOpen: (open: boolean) => void;
+  toggleMobileMenu: () => void;
+  closeMobileMenu: () => void;
   
   // Data models
   profiles: UserProfile[];
@@ -105,6 +109,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [activeTab, setActiveTab] = useState<string>('attendance');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+
+  const toggleMobileMenu = () => setIsMobileMenuOpen(prev => !prev);
+  const closeMobileMenu = () => setIsMobileMenuOpen(false);
   
   // Dark / Light Theme
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -1052,6 +1060,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setActiveTab,
       searchQuery,
       setSearchQuery,
+      isMobileMenuOpen,
+      setIsMobileMenuOpen,
+      toggleMobileMenu,
+      closeMobileMenu,
       profiles,
       addProfile,
       updateProfile,

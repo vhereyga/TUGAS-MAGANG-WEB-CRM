@@ -175,7 +175,7 @@ export const ReportsPage: React.FC = () => {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full min-w-[650px] text-left border-collapse text-xs">
               <thead>
                 <tr className="border-b border-slate-100 dark:border-slate-800 font-bold text-slate-400 uppercase tracking-wider">
                   <th className="py-3 px-4">ID Siswa</th>
@@ -219,7 +219,7 @@ export const ReportsPage: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800">
               <p className="text-xs text-slate-400">Total Ditagihkan</p>
               <h3 className="text-lg font-extrabold text-slate-900 dark:text-white mt-1">

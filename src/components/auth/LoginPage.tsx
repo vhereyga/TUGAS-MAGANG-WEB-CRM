@@ -254,8 +254,8 @@ export const LoginPage: React.FC = () => {
                       </div>
 
                       {/* Credentials Tooltip Bar */}
-                      <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-700/50 flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500 font-mono">
-                        <span>Email: <strong className="text-slate-700 dark:text-slate-300">{item.email}</strong></span>
+                      <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-700/50 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[11px] text-slate-400 dark:text-slate-500 font-mono">
+                        <span className="truncate">Email: <strong className="text-slate-700 dark:text-slate-300">{item.email}</strong></span>
                         <span>Pass: <strong className="text-slate-700 dark:text-slate-300">{item.password}</strong></span>
                       </div>
                     </div>
